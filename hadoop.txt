@@ -1,0 +1,118 @@
+fconfig
+# ip 192.168.111.129
+ssh 192.168.111.129 -l everis
+# yes
+# Last login: ...
+sudo service hadoop-hdfs-namenode start
+# Started OK
+sudo service hadoop-hdfs-secondarynamenode start
+# Started OK
+sudo service hadoop-hdfs-secondarynamenode status
+# Hadoop secondarynamenode running
+sudo service hadoop-hdfs-datanode start
+# Started OK
+sudo service hadoop-mapreduce-historyserver start
+# Started OK
+sudo service hadoop-yarn-resourcemanager start
+# Started OK
+sudo service hadoop-yarn-nodemanager start
+# Started OK
+
+
+# TO CHECK THE name node status
+hdfs dfsadmin -safemode get
+
+# TO LEAVE SAFE mode
+sudo -u hdfs hdfs dfsadmin -safemode leave
+# Safe mode is OFF
+
+# copiando do hdfs com um nome diferente GET
+hdfs dfs -get /tmp/file_teste.txt file_teste2.txt
+
+# enviando um arquivo ao hdfs PUT
+hdfs dfs -put file_teste2.txt /user/everis-bigdata/
+
+
+# problemas de gravacao:
+sudo -u hdfs hdfs dfs -chmod -R 777 /tmp
+
+# so para lembrar:
+# ll -lista arquivos
+# cat - ver arquivo
+# vim - editar arquivo
+
+# lista arquivos hdfs (sao os arquivos e pastas do hdfs)
+hdfs dfs -ls -h /
+# Foud 5 itenms
+
+# visualiza 10 primeiras linhas do arquivo no hdfs
+hdfs dfs -cat /tmp/file_teste2.txt |head -10
+
+# cria uma pasta no hdfs
+hdfs dfs -mkdir /tmp/delete
+
+# lista os arquivos e diretorios da pasta tmp
+hdfs dfs -ls /tmp
+# foud 8 itens
+
+# copiar arquivo do tmp para delete
+hdfs dfs –cp /tmp/file_teste.txt /tmp/delete/
+
+# criando um arquivo vazio
+hdfs dfs –touchz /tmp/delete/novo_arquivo
+
+#lista arquivos da pasta /tmp/delete
+hdfs dfs -ls /tmp/delete
+hdfs dfs -ls -h /tmp/delete
+# Foud 2 items
+# fator de replicacao 3
+
+# deletando a pasta delete
+hdfs dfs -rm -R /tmp/delete
+# Deleted
+
+# uso do disco
+sudo -u hdfs hdfs dfs -du -h /user
+
+# verificando os blocos:
+sudo -u hdfs hdfs fsck /tmp/ -files -blocks
+# caso haja blocos corrompidos que precisam ser removidos  
+sudo -u hdfs hdfs fsck -move
+sudo -u hdfs hdfs fsck -delete
+
+# verificar o caminho dos logs no hdfs
+sudo sed -i 's|hdfs://|hdfs://bigdata-srv:8020/|g' /etc/hadoop/conf/yarn-site.xml
+
+# verificar se o caminho para identificar os logs esta correto
+cat /etc/hadoop/conf/yarn-site.xml |grep bigdata-srv
+
+
+# rodando um job
+# usuario hdfs
+# comando yarn jar
+# define o diretorio do arquivo de exemplo do mapreduce/hadoop
+# do jar usa o wordcoutsud
+# arquivo de leitura no hdfs
+# arquivo de saida
+sudo –u hdfs yarn jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar wordcount /tmp/file_teste2.txt /tmp/wc_output
+sudo –u hdfs yarn jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar wordcount /tmp/file_teste.txt /tmp/wc_output
+
+# verifica se o arquivo foi gerado
+hdfs dfs -ls /tmp/wc_output
+# SUCCESS
+
+# Abre o arquivo gerado
+hdfs dfs -cat /tmp/wc_output_part-r-00000
+http://192.168.111.129:8088/cluster/
+
+# acessando o log do yarn
+sudo -u hdfs yarn logs -applicationId application_1639746875730_0001 |more
+sudo -u hdfs yarn logs -applicationId application_1639746875730_0001 > wordcount.log
+
+# parando tds servicos
+sh script_apoio/stop_all_services.sh
+
+# desafivando firewall linux:
+systemctl stop firewalld 
+systemctl status firewalld 
+
